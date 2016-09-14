@@ -1,0 +1,61 @@
+Local string &Bill_to_Cust_id, &Ship_to_Cust_id, &CRM_Cust_Name;
+Local number &Cntct_Seq_PFIN, &Cntct_Seq_Ship, &Cntct_Seq_Bill;
+
+&Order_No = BB_CNTCTSEQ_AET.ORDER_NO;
+&Bill_to_Cust_id = BB_CNTCTSEQ_AET.BILL_TO_CUST_ID;
+&Ship_to_Cust_id = BB_CNTCTSEQ_AET.SHIP_TO_CUST_ID;
+&Cntct_Seq_Ship = BB_CNTCTSEQ_AET.CNTCT_SEQ_SHIP;
+&Cntct_Seq_Bill = BB_CNTCTSEQ_AET.CNTCT_SEQ_BILL;
+If &Bill_to_Cust_id = &Ship_to_Cust_id Then
+   SQLExec("SELECT B.NAME1 FROM EBSDB1.CRMQA.dbo.PS_CONTACT_CUST A, EBSDB1.CRMQA.dbo.PS_CONTACT B WHERE A.CONTACT_ID = B.CONTACT_ID  AND A.CUST_ID = :1 AND A.CNTCT_SEQ_NUM = :2", &Bill_to_Cust_id, &Cntct_Seq_Bill, &CRM_Cust_Name);
+
+   If None(&CRM_Cust_Name) Then
+   Else
+      &CRM_Cust_Name = "%" | &CRM_Cust_Name | "%";
+
+      SQLExec("SELECT CNTCT_SEQ_NUM FROM PS_CUST_CONTACT WHERE NAME1 LIKE :1 and CUST_ID = :2", &CRM_Cust_Name, &Bill_to_Cust_id, &Cntct_Seq_PFIN);
+      If None(&Cntct_Seq_PFIN) Then
+         If &Cntct_Seq_PFIN = &Cntct_Seq_Bill Then
+
+         Else
+            MessageBox(0, "", 0, 0, "&Cntct_Seq_PFIN" | &Cntct_Seq_PFIN);
+            MessageBox(0, "", 0, 0, "&Cntct_Seq_Bill" | &Cntct_Seq_Bill);
+            SQLExec("UPDATE PS_ORD_HEADER_EC SET CNTCT_SEQ_BILL = :1, CNTCT_SEQ_SHIP = :2, CNTCT_SEQ_NUM = :3 WHERE ORDER_NO = :4", &Cntct_Seq_PFIN, &Cntct_Seq_PFIN, &Cntct_Seq_PFIN, &Order_No);
+            SQLExec("UPDATE PS_ORD_LINE_EC SET CNTCT_SEQ_SHIP = :1 where ORDER_NO = :2 ", &Cntct_Seq_Ship, &Order_No);
+            SQLExec("UPDATE PS_ORD_SCHEDULE_EC SET CNTCT_SEQ_SHIP = :1 where ORDER_NO = :2 ", &Cntct_Seq_Ship, &Order_No);
+         End-If;
+      End-If;
+   End-If;
+Else
+   SQLExec("SELECT B.NAME1 FROM EBSDB1.CRMQA.dbo.PS_CONTACT_CUST A, EBSDB1.CRMQA.dbo.PS_CONTACT B WHERE A.CONTACT_ID = B.CONTACT_ID  AND A.CUST_ID = :1 AND A.CNTCT_SEQ_NUM = :2", &Bill_to_Cust_id, &Cntct_Seq_Bill, &CRM_Bill_Cust_Name);
+   SQLExec("SELECT B.NAME1 FROM EBSDB1.CRMQA.dbo.PS_CONTACT_CUST A, EBSDB1.CRMQA.dbo.PS_CONTACT B WHERE A.CONTACT_ID = B.CONTACT_ID  AND A.CUST_ID = :1 AND A.CNTCT_SEQ_NUM = :2", &Ship_to_Cust_id, &Cntct_Seq_Bill, &CRM_Ship_Cust_Name);
+   If None(&CRM_Bill_Cust_Name) Then
+   Else
+      MessageBox(0, "", 0, 0, "&CRM_Bill_Cust_Name" | &CRM_Bill_Cust_Name);
+
+      &CRM_Bill_Cust_Name = "%" | &CRM_Bill_Cust_Name | "%";
+      SQLExec("SELECT CNTCT_SEQ_NUM FROM PS_CUST_CONTACT WHERE NAME1 LIKE :1 and CUST_ID = :2", &CRM_Bill_Cust_Name, &Bill_to_Cust_id, &Cntct_Seq_PFIN_Bill);
+      If None(&Cntct_Seq_PFIN_Bill) Then
+         If &Cntct_Seq_PFIN_Bill = &Cntct_Seq_Bill Then
+         Else
+            SQLExec("UPDATE PS_ORD_HEADER_EC SET CNTCT_SEQ_BILL = :1 WHERE ORDER_NO = :3", &Cntct_Seq_PFIN_Bill, &Order_No);
+         End-If;
+      End-If;
+   End-If;
+   If None(&CRM_Ship_Cust_Name) Then
+   Else
+      &CRM_Ship_Cust_Name = "%" | &CRM_Ship_Cust_Name | "%";
+
+      SQLExec("SELECT CNTCT_SEQ_NUM FROM PS_CUST_CONTACT WHERE NAME1 LIKE :1 and CUST_ID = :2", &CRM_Ship_Cust_Name, &Ship_to_Cust_id, &Cntct_Seq_PFIN_Ship);
+      If None(&Cntct_Seq_PFIN_Ship) Then
+         If &Cntct_Seq_PFIN_Ship = &Cntct_Seq_Ship Then
+         Else
+            MessageBox(0, "", 0, 0, "&CRM_Ship_Cust_Name" | &CRM_Ship_Cust_Name);
+            SQLExec("UPDATE PS_ORD_HEADER_EC SET CNTCT_SEQ_SHIP = :1,  CNTCT_SEQ_NUM = :2 WHERE ORDER_NO = :3", &Cntct_Seq_PFIN_Ship, &Cntct_Seq_PFIN_Ship, &Order_No);
+            SQLExec("UPDATE PS_ORD_LINE_EC SET CNTCT_SEQ_SHIP = :1 where ORDER_NO = :2 ", &Cntct_Seq_PFIN_Ship, &Order_No);
+            SQLExec("UPDATE PS_ORD_SCHEDULE_EC SET CNTCT_SEQ_SHIP = :1 where ORDER_NO = :2 ", &Cntct_Seq_PFIN_Ship, &Order_No);
+         End-If;
+      End-If;
+   End-If;
+
+End-If;
